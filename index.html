@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CB Navigator 3.0</title>
+
+<style>
+
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#1f1f1f;
+    color:white;
+}
+
+header{
+    background:#c40000;
+    padding:20px;
+    text-align:center;
+    font-size:32px;
+    font-weight:bold;
+}
+
+.container{
+    padding:20px;
+}
+
+.box{
+    background:#2d2d2d;
+    border-radius:15px;
+    padding:20px;
+    margin-bottom:20px;
+}
+
+h2{
+    margin-top:0;
+    color:#ff4d4d;
+}
+
+select,input{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    background:#3a3a3a;
+    color:white;
+    font-size:16px;
+    box-sizing:border-box;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    margin-top:15px;
+    border:none;
+    border-radius:12px;
+    background:#c40000;
+    color:white;
+    font-size:18px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#ff0000;
+}
+
+.resultBox{
+    background:#3a3a3a;
+    padding:15px;
+    border-radius:12px;
+    margin-top:15px;
+}
+
+.routeBox{
+    background:#444;
+    padding:12px;
+    border-radius:10px;
+    margin-top:10px;
+}
+
+.live{
+    color:#00ff99;
+    font-weight:bold;
+}
+
+.small{
+    color:#bbbbbb;
+    font-size:14px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+🚆 CB Navigator 3.0
+</header>
+
+<div class="container">
+
+<!-- ROUTENSUCHE -->
+
+<div class="box">
+
+<h2>🔍 Verbindung suchen</h2>
+
+<label>Von:</label>
+<select id="von"></select>
+
+<label>Nach:</label>
+<select id="bis"></select>
+
+<label>Abfahrtszeit:</label>
+<input type="time" id="zeit" value="11:00">
+
+<button onclick="routeSuchen()">
+🚉 Verbindung suchen
+</button>
+
+<div id="results"></div>
+
+</div>
+
+<!-- GESPEICHERTE STRECKEN -->
+
+<div class="box">
+
+<h2>📌 Gespeicherte Reisen</h2>
+
+<div id="savedRoutes"></div>
+
+</div>
+
+</div>
+
+<script>
+
+/* =====================================
+   🚆 CB NETZ
+===================================== */
+
+const lines = [
+
+{
+    name:"RE11",
+    direction:"Berlin Hbf",
+
+    stations:[
+        "Schöningen Hbf",
+        "SHÖ-Markt",
+        "Alter Bahnhof",
+        "Lucuya Bahnhof",
+        "Hötensleben (SHÖ)",
+        "Ausleben",
+        "Oschersleben (Bode)",
+        "MD-Buckau",
+        "Magdeburg Hbf",
+        "Neustadt",
+        "Burg (Magdeburg)",
+        "Genthin",
+        "Brandenburg Hbf",
+        "Potsdam Hbf",
+        "Berlin Hbf"
+    ]
+},
+
+{
+    name:"CE+1",
+    direction:"Schöningen Hbf",
+
+    stations:[
+        "Bärendorf Hbf",
+        "Carlaria West",
+        "BÄ-Ost",
+        "Bad Benen",
+        "Augsburg Hbf",
+        "Nürnberg Hbf",
+        "Hof Hbf",
+        "Leipzig Hbf",
+        "Halle (Saale) Hbf",
+        "Schöningen Hbf"
+    ]
+},
+
+{
+    name:"RB49",
+    direction:"Helmstedt",
+
+    stations:[
+        "Schöppenstedt",
+        "Gr Dahlum",
+        "Wobeck (SHÖ)",
+        "Schöningen Hbf",
+        "SHÖ-Markt",
+        "Frellstedt",
+        "Helmstedt"
+    ]
+},
+
+{
+    name:"RE51",
+    direction:"Hildesheim Hbf",
+
+    stations:[
+        "Schöningen Hbf",
+        "Wobeck (SHÖ)",
+        "Schöppenstedt",
+        "Wolfenbüttel",
+        "Braunschweig Hbf",
+        "Lengede Broistedt",
+        "Lengede Nord",
+        "Burgdorf (b Hildesheim)",
+        "Ottbergen",
+        "Hildesheim Ost",
+        "Hildesheim Hbf"
+    ]
+},
+
+{
+    name:"RB45",
+    direction:"Schöppenstedt",
+
+    stations:[
+        "Braunschweig Hbf",
+        "Wolfenbüttel",
+        "Dettum",
+        "Schöppenstedt"
+    ]
+}
+
+];
+
+/* =====================================
+   🚉 STATIONEN SAMMELN
+===================================== */
+
+const allStations = [];
+
+lines.forEach(line=>{
+
+    line.stations.forEach(station=>{
+
+        if(!allStations.includes(station)){
+            allStations.push(station);
+        }
+
+    });
+
+});
+
+allStations.sort();
+
+/* =====================================
+   🔽 DROPDOWNS
+===================================== */
+
+const vonSelect =
+document.getElementById("von");
+
+const bisSelect =
+document.getElementById("bis");
+
+allStations.forEach(station=>{
+
+    const o1 =
+    document.createElement("option");
+
+    o1.value = station;
+    o1.textContent = station;
+
+    vonSelect.appendChild(o1);
+
+    const o2 =
+    document.createElement("option");
+
+    o2.value = station;
+    o2.textContent = station;
+
+    bisSelect.appendChild(o2);
+
+});
+
+/* =====================================
+   🔍 ROUTE SUCHEN
+===================================== */
+
+function routeSuchen(){
+
+    const von =
+    vonSelect.value;
+
+    const bis =
+    bisSelect.value;
+
+    const zeit =
+    document.getElementById("zeit").value;
+
+    const results =
+    document.getElementById("results");
+
+    results.innerHTML = "";
+
+    let found = false;
+
+    /* =========================
+       DIREKTVERBINDUNGEN
+    ========================= */
+
+    lines.forEach(line=>{
+
+        const start =
+        line.stations.indexOf(von);
+
+        const end =
+        line.stations.indexOf(bis);
+
+        if(
+            start !== -1 &&
+            end !== -1 &&
+            start < end
+        ){
+
+            found = true;
+
+            results.innerHTML += `
+
+            <div class="resultBox">
+
+            <h2 class="live">
+            🚆 ${line.name}
+            </h2>
+
+            <p>
+            Richtung:
+            <b>${line.direction}</b>
+            </p>
+
+            <p>
+            ${von} ➜ ${bis}
+            </p>
+
+            <p>
+            Abfahrt ab:
+            <b>${zeit}</b>
+            </p>
+
+            <button onclick="
+            streckeSpeichern(
+                '${line.name}',
+                '${von}',
+                '${bis}',
+                '${zeit}'
+            )
+            ">
+            📌 Reise speichern
+            </button>
+
+            </div>
+
+            `;
+
+        }
+
+    });
+
+    /* =========================
+       UMSTIEGE
+    ========================= */
+if(!found){
+
+    lines.forEach(line1=>{
+
+        lines.forEach(line2=>{
+
+            if(line1 === line2) return;
+
+            const start1 =
+            line1.stations.indexOf(von);
+
+            if(start1 === -1) return;
+
+            const end2 =
+            line2.stations.indexOf(bis);
+
+            if(end2 === -1) return;
+
+            line1.stations.forEach((transferStation,index1)=>{
+
+                const transferIndex2 =
+                line2.stations.indexOf(
+                    transferStation
+                );
+
+                if(transferIndex2 === -1) return;
+
+                if(
+                    start1 < index1 &&
+                    transferIndex2 < end2
+                ){
+
+                    found = true;
+
+                    results.innerHTML += `
+
+                    <div class="resultBox">
+
+                    <h2 class="live">
+                    🔄 Umstieg möglich
+                    </h2>
+
+                    <p>
+                    🚆 ${line1.name}
+                    von
+                    <b>${von}</b>
+                    bis
+                    <b>${transferStation}</b>
+                    </p>
+
+                    <p>
+                    🚆 ${line2.name}
+                    von
+                    <b>${transferStation}</b>
+                    bis
+                    <b>${bis}</b>
+                    </p>
+
+                    <p>
+                    🚉 Umstieg:
+                    <b>${transferStation}</b>
+                    </p>
+
+                    <p>
+                    ⏱ Abfahrt:
+                    <b>${zeit}</b>
+                    </p>
+
+                    <button onclick="
+                    streckeSpeichern(
+                        'Umstieg',
+                        '${von}',
+                        '${bis}',
+                        '${zeit}'
+                    )
+                    ">
+                    📌 Reise speichern
+                    </button>
+
+                    </div>
+
+                    `;
+
+                }
+
+            });
+
+        });
+
+    });
+
+}
+/* =====================================
+   📌 REISE SPEICHERN
+===================================== */
+
+function streckeSpeichern(name, von, bis, zeit){
+
+    const authUrl = new URL(
+    'https://c9c5dc9f-7a0a-4a6b-86be-cf4d681d9754-00-3ilzyfeh60vrr.janeway.replit.dev/authorize'
+    );
+
+    authUrl.searchParams.set(
+        'name',
+        name
+    );
+
+    authUrl.searchParams.set(
+        'von',
+        von
+    );
+
+    authUrl.searchParams.set(
+        'bis',
+        bis
+    );
+
+    authUrl.searchParams.set(
+        'zeit',
+        zeit
+    );
+
+    authUrl.searchParams.set(
+        'app',
+        'CB Navigator'
+    );
+
+    authUrl.searchParams.set(
+        'redirect_uri',
+        window.location.href
+    );
+
+    window.location.href =
+    authUrl.toString();
+
+}
+
+/* =====================================
+   📥 AUTH RÜCKGABE
+===================================== */
+
+const params =
+new URLSearchParams(window.location.search);
+
+if(params.get("authorized") === "true"){
+
+    const route = {
+
+        name:
+        params.get("name"),
+
+        von:
+        params.get("von"),
+
+        bis:
+        params.get("bis"),
+
+        zeit:
+        params.get("zeit")
+
+    };
+
+    let routes =
+    JSON.parse(
+        localStorage.getItem(
+            "cb_saved_routes"
+        ) || "[]"
+    );
+
+    routes.push(route);
+
+    localStorage.setItem(
+        "cb_saved_routes",
+        JSON.stringify(routes)
+    );
+
+}
+
+/* =====================================
+   📌 GESPEICHERTE REISEN
+===================================== */
+
+function ladeReisen(){
+
+    const saved =
+    document.getElementById(
+        "savedRoutes"
+    );
+
+    saved.innerHTML = "";
+
+    const routes =
+    JSON.parse(
+        localStorage.getItem(
+            "cb_saved_routes"
+        ) || "[]"
+    );
+
+    if(routes.length === 0){
+
+        saved.innerHTML =
+        "<p class='small'>Keine gespeicherten Reisen</p>";
+
+        return;
+
+    }
+
+    routes.forEach(route=>{
+
+        saved.innerHTML += `
+
+        <div class="routeBox">
+
+        🚆 <b>${route.name}</b><br>
+
+        ${route.von}
+        ➜
+        ${route.bis}<br>
+
+        ⏱ ${route.zeit}
+
+        </div>
+
+        `;
+
+    });
+
+}
+
+ladeReisen();
+
+</script>
+
+</body>
+</html>
