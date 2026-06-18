@@ -414,6 +414,45 @@ allStations.forEach(station=>{
 });
 
 /* =====================================
+   ⏱ ZEITMODELL
+===================================== */
+
+const FAHRZEIT_PRO_ABSCHNITT = 5;
+const MINDEST_UMSTIEGSZEIT = 5;
+
+function zeitInMinuten(zeit){
+
+    const [stunden,minuten] =
+    zeit.split(":").map(Number);
+
+    return stunden * 60 + minuten;
+
+}
+
+function minutenAlsZeit(minutenGesamt){
+
+    const minutenProTag = 24 * 60;
+
+    const minutenNormalisiert =
+    ((minutenGesamt % minutenProTag) + minutenProTag) % minutenProTag;
+
+    const stunden =
+    Math.floor(minutenNormalisiert / 60);
+
+    const minuten =
+    minutenNormalisiert % 60;
+
+    return `${String(stunden).padStart(2,"0")}:${String(minuten).padStart(2,"0")}`;
+
+}
+
+function fahrzeitBerechnen(startIndex,endIndex){
+
+    return (endIndex - startIndex) * FAHRZEIT_PRO_ABSCHNITT;
+
+}
+
+/* =====================================
    🔍 ROUTE SUCHEN
 ===================================== */
 
@@ -432,6 +471,9 @@ function routeSuchen(){
     document.getElementById("results");
 
     results.innerHTML = "";
+
+    const startMinuten =
+    zeitInMinuten(zeit);
 
     let resultCount = 0;
 
@@ -469,8 +511,10 @@ function routeSuchen(){
             hatStationsbewegung(start,end)
         ){
 
-            const richtung =
-            richtungFuer(line,start,end);
+            const zielAnkunft =
+            minutenAlsZeit(
+                startMinuten + fahrzeitBerechnen(start,end)
+            );
 
             resultCount++;
 
@@ -489,13 +533,26 @@ function routeSuchen(){
 
     }
 
-    const sections =
-    routeInAbschnitteGruppieren(route);
+            <p>
+            ⏱ Abfahrt:
+            <b>${zeit}</b>
+            </p>
 
-    const routeName =
-    sections.length === 1
-        ? sections[0].lineName
-        : "Umstieg";
+            <p>
+            🏁 Ankunft Ziel:
+            <b>${zielAnkunft}</b>
+            </p>
+
+            <button onclick="
+            streckeSpeichern(
+                '${line.name}',
+                '${von}',
+                '${bis}',
+                '${zeit}'
+            )
+            ">
+            📌 Reise speichern
+            </button>
 
     const sectionHtml =
     sections.map((section,index)=>`
@@ -556,11 +613,25 @@ function routeSuchen(){
                     hatStationsbewegung(transferIndex2,end2)
                 ){
 
-                    const richtung1 =
-                    richtungFuer(line1,start1,index1);
+                    const ankunftUmstieg =
+                    minutenAlsZeit(
+                        startMinuten + fahrzeitBerechnen(start1,index1)
+                    );
 
-                    const richtung2 =
-                    richtungFuer(line2,transferIndex2,end2);
+                    const weiterfahrt =
+                    minutenAlsZeit(
+                        startMinuten +
+                        fahrzeitBerechnen(start1,index1) +
+                        MINDEST_UMSTIEGSZEIT
+                    );
+
+                    const ankunftZiel =
+                    minutenAlsZeit(
+                        startMinuten +
+                        fahrzeitBerechnen(start1,index1) +
+                        MINDEST_UMSTIEGSZEIT +
+                        fahrzeitBerechnen(transferIndex2,end2)
+                    );
 
                     resultCount++;
 
@@ -606,6 +677,21 @@ function routeSuchen(){
                     <p>
                     ⏱ Abfahrt:
                     <b>${zeit}</b>
+                    </p>
+
+                    <p>
+                    🕓 Ankunft Umstieg:
+                    <b>${ankunftUmstieg}</b>
+                    </p>
+
+                    <p>
+                    🚉 Weiterfahrt:
+                    <b>${weiterfahrt}</b>
+                    </p>
+
+                    <p>
+                    🏁 Ankunft Ziel:
+                    <b>${ankunftZiel}</b>
                     </p>
 
                     <button onclick="
