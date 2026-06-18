@@ -108,10 +108,10 @@ button:hover{
 <h2>🔍 Verbindung suchen</h2>
 
 <label>Von:</label>
-<select id="von"></select>
+<select id="von" required></select>
 
 <label>Nach:</label>
-<select id="bis"></select>
+<select id="bis" required></select>
 
 <label>Abfahrtszeit:</label>
 <input type="time" id="zeit" value="11:00">
@@ -393,25 +393,43 @@ document.getElementById("von");
 const bisSelect =
 document.getElementById("bis");
 
-allStations.forEach(station=>{
+function dropdownFuellen(select, placeholder){
 
-    const o1 =
+    select.innerHTML = "";
+
+    const placeholderOption =
     document.createElement("option");
 
-    o1.value = station;
-    o1.textContent = station;
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder;
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
 
-    vonSelect.appendChild(o1);
+    select.appendChild(placeholderOption);
 
-    const o2 =
-    document.createElement("option");
+    allStations.forEach(station=>{
 
-    o2.value = station;
-    o2.textContent = station;
+        const option =
+        document.createElement("option");
 
-    bisSelect.appendChild(o2);
+        option.value = station;
+        option.textContent = station;
 
-});
+        select.appendChild(option);
+
+    });
+
+}
+
+dropdownFuellen(
+    vonSelect,
+    "Startbahnhof auswählen"
+);
+
+dropdownFuellen(
+    bisSelect,
+    "Zielbahnhof auswählen"
+);
 
 /* =====================================
    ⏱ ZEITMODELL
@@ -472,6 +490,16 @@ function routeSuchen(){
 
     results.innerHTML = "";
 
+    if(!von || !bis){
+
+        results.innerHTML =
+        "<p class='small'>Bitte Start und Ziel auswählen</p>";
+
+        return;
+
+    }
+
+    let found = false;
     const startMinuten =
     zeitInMinuten(zeit);
 
@@ -718,6 +746,15 @@ function routeSuchen(){
     });
 
     if(resultCount === 0){
+
+        results.innerHTML =
+        "<p class='small'>Keine Verbindung gefunden</p>";
+
+    }
+
+}
+
+    if(!found){
 
         results.innerHTML =
         "<p class='small'>Keine Verbindung gefunden</p>";
