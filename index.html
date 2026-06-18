@@ -461,6 +461,15 @@ if(!found){
     });
 
 }
+
+    if(!found){
+
+        results.innerHTML =
+        "<p class='small'>Keine Verbindung gefunden</p>";
+
+    }
+
+}
 /* =====================================
    📌 REISE SPEICHERN
 ===================================== */
@@ -543,6 +552,12 @@ if(params.get("authorized") === "true"){
     localStorage.setItem(
         "cb_saved_routes",
         JSON.stringify(routes)
+    );
+
+    window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname
     );
 
 }
