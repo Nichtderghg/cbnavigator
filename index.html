@@ -254,6 +254,136 @@ lines.forEach(line=>{
 allStations.sort();
 
 /* =====================================
+   🕸️ STATIONSGRAPH
+===================================== */
+
+function stationsGraphBauen(){
+
+    const graph = {};
+
+    lines.forEach(line=>{
+
+        line.stations.forEach((station,index)=>{
+
+            if(!graph[station]){
+                graph[station] = [];
+            }
+
+            const nextStation =
+            line.stations[index + 1];
+
+            if(!nextStation) return;
+
+            const edge = {
+                from: station,
+                to: nextStation,
+                lineName: line.name
+            };
+
+            const reverseEdge = {
+                from: nextStation,
+                to: station,
+                lineName: line.name
+            };
+
+            graph[station].push(edge);
+
+            if(!graph[nextStation]){
+                graph[nextStation] = [];
+            }
+
+            graph[nextStation].push(reverseEdge);
+
+        });
+
+    });
+
+    return graph;
+
+}
+
+const stationsGraph =
+stationsGraphBauen();
+
+function routeMitBfsFinden(von,bis){
+
+    const queue = [
+        {
+            station: von,
+            path: []
+        }
+    ];
+
+    const visited =
+    new Set([von]);
+
+    while(queue.length > 0){
+
+        const current =
+        queue.shift();
+
+        if(current.station === bis){
+            return current.path;
+        }
+
+        const edges =
+        stationsGraph[current.station] || [];
+
+        edges.forEach(edge=>{
+
+            if(visited.has(edge.to)) return;
+
+            visited.add(edge.to);
+
+            queue.push({
+                station: edge.to,
+                path: [
+                    ...current.path,
+                    edge
+                ]
+            });
+
+        });
+
+    }
+
+    return null;
+
+}
+
+function routeInAbschnitteGruppieren(route){
+
+    const sections = [];
+
+    route.forEach(edge=>{
+
+        const lastSection =
+        sections[sections.length - 1];
+
+        if(
+            lastSection &&
+            lastSection.lineName === edge.lineName
+        ){
+
+            lastSection.to = edge.to;
+
+        }else{
+
+            sections.push({
+                lineName: edge.lineName,
+                from: edge.from,
+                to: edge.to
+            });
+
+        }
+
+    });
+
+    return sections;
+
+}
+
+/* =====================================
    🔽 DROPDOWNS
 ===================================== */
 
@@ -303,167 +433,83 @@ function routeSuchen(){
 
     results.innerHTML = "";
 
-    let resultCount = 0;
+    if(von === bis){
 
-    /* =========================
-       DIREKTVERBINDUNGEN
-    ========================= */
+        results.innerHTML =
+        "<p class='small'>Start und Ziel sind identisch</p>";
 
-    lines.forEach(line=>{
+        return;
 
-        const start =
-        line.stations.indexOf(von);
+    }
 
-        const end =
-        line.stations.indexOf(bis);
+    const route =
+    routeMitBfsFinden(von,bis);
 
-        if(
-            start !== -1 &&
-            end !== -1 &&
-            start < end
-        ){
-
-            resultCount++;
-
-            results.innerHTML += `
-
-            <div class="resultBox">
-
-            <h2 class="live">
-            🚆 ${line.name}
-            </h2>
-
-            <p>
-            Richtung:
-            <b>${line.direction}</b>
-            </p>
-
-            <p>
-            ${von} ➜ ${bis}
-            </p>
-
-            <p>
-            Abfahrt ab:
-            <b>${zeit}</b>
-            </p>
-
-            <button onclick="
-            streckeSpeichern(
-                '${line.name}',
-                '${von}',
-                '${bis}',
-                '${zeit}'
-            )
-            ">
-            📌 Reise speichern
-            </button>
-
-            </div>
-
-            `;
-
-        }
-
-    });
-
-    /* =========================
-       UMSTIEGE
-    ========================= */
-    lines.forEach(line1=>{
-
-        lines.forEach(line2=>{
-
-            if(line1 === line2) return;
-
-            const start1 =
-            line1.stations.indexOf(von);
-
-            if(start1 === -1) return;
-
-            const end2 =
-            line2.stations.indexOf(bis);
-
-            if(end2 === -1) return;
-
-            line1.stations.forEach((transferStation,index1)=>{
-
-                const transferIndex2 =
-                line2.stations.indexOf(
-                    transferStation
-                );
-
-                if(transferIndex2 === -1) return;
-
-                if(
-                    start1 < index1 &&
-                    transferIndex2 < end2
-                ){
-
-                    resultCount++;
-
-                    results.innerHTML += `
-
-                    <div class="resultBox">
-
-                    <h2 class="live">
-                    🔄 Umstieg möglich
-                    </h2>
-
-                    <p>
-                    🚆 ${line1.name}
-                    von
-                    <b>${von}</b>
-                    bis
-                    <b>${transferStation}</b>
-                    </p>
-
-                    <p>
-                    🚆 ${line2.name}
-                    von
-                    <b>${transferStation}</b>
-                    bis
-                    <b>${bis}</b>
-                    </p>
-
-                    <p>
-                    🚉 Umstieg:
-                    <b>${transferStation}</b>
-                    </p>
-
-                    <p>
-                    ⏱ Abfahrt:
-                    <b>${zeit}</b>
-                    </p>
-
-                    <button onclick="
-                    streckeSpeichern(
-                        'Umstieg',
-                        '${von}',
-                        '${bis}',
-                        '${zeit}'
-                    )
-                    ">
-                    📌 Reise speichern
-                    </button>
-
-                    </div>
-
-                    `;
-
-                }
-
-            });
-
-        });
-
-    });
-
-    if(resultCount === 0){
+    if(!route){
 
         results.innerHTML =
         "<p class='small'>Keine Verbindung gefunden</p>";
 
+        return;
+
     }
+
+    const sections =
+    routeInAbschnitteGruppieren(route);
+
+    const routeName =
+    sections.length === 1
+        ? sections[0].lineName
+        : "Umstieg";
+
+    const sectionHtml =
+    sections.map((section,index)=>`
+
+        <p>
+        🚆 ${section.lineName}
+        von
+        <b>${section.from}</b>
+        bis
+        <b>${section.to}</b>
+        </p>
+
+        ${
+            index < sections.length - 1
+                ? `<p>🚉 Umstieg: <b>${section.to}</b></p>`
+                : ""
+        }
+
+    `).join("");
+
+    results.innerHTML += `
+
+    <div class="resultBox">
+
+    <h2 class="live">
+    ${sections.length === 1 ? "🚆 Direktverbindung" : "🔄 Umstieg möglich"}
+    </h2>
+
+    ${sectionHtml}
+
+    <p>
+    ⏱ Abfahrt:
+    <b>${zeit}</b>
+    </p>
+
+    <button onclick="
+    streckeSpeichern(
+        '${routeName}',
+        '${von}',
+        '${bis}',
+        '${zeit}'
+    )
+    ">
+    📌 Reise speichern
+    </button>
+
+    </div>
+
+    `;
 
 }
 /* =====================================
