@@ -305,6 +305,22 @@ function routeSuchen(){
 
     let resultCount = 0;
 
+    function istInFahrtrichtung(startIndex, endIndex){
+
+        return startIndex !== endIndex;
+
+    }
+
+    function richtungFuer(line, startIndex, endIndex){
+
+        if(startIndex < endIndex){
+            return line.direction;
+        }
+
+        return line.reverseDirection || line.stations[0];
+
+    }
+
     /* =========================
        DIREKTVERBINDUNGEN
     ========================= */
@@ -320,8 +336,11 @@ function routeSuchen(){
         if(
             start !== -1 &&
             end !== -1 &&
-            start < end
+            istInFahrtrichtung(start,end)
         ){
+
+            const richtung =
+            richtungFuer(line,start,end);
 
             resultCount++;
 
@@ -335,7 +354,7 @@ function routeSuchen(){
 
             <p>
             Richtung:
-            <b>${line.direction}</b>
+            <b>${richtung}</b>
             </p>
 
             <p>
@@ -395,9 +414,15 @@ function routeSuchen(){
                 if(transferIndex2 === -1) return;
 
                 if(
-                    start1 < index1 &&
-                    transferIndex2 < end2
+                    istInFahrtrichtung(start1,index1) &&
+                    istInFahrtrichtung(transferIndex2,end2)
                 ){
+
+                    const richtung1 =
+                    richtungFuer(line1,start1,index1);
+
+                    const richtung2 =
+                    richtungFuer(line2,transferIndex2,end2);
 
                     resultCount++;
 
@@ -418,11 +443,21 @@ function routeSuchen(){
                     </p>
 
                     <p>
+                    Richtung:
+                    <b>${richtung1}</b>
+                    </p>
+
+                    <p>
                     🚆 ${line2.name}
                     von
                     <b>${transferStation}</b>
                     bis
                     <b>${bis}</b>
+                    </p>
+
+                    <p>
+                    Richtung:
+                    <b>${richtung2}</b>
                     </p>
 
                     <p>
