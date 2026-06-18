@@ -433,14 +433,46 @@ function routeSuchen(){
 
     results.innerHTML = "";
 
-    if(von === bis){
+    let resultCount = 0;
+
+    function hatStationsbewegung(startIndex, endIndex){
+
+        return startIndex < endIndex || startIndex > endIndex;
+
+    }
+
+    function richtungFuer(line, startIndex, endIndex){
+
+        if(startIndex < endIndex){
+            return line.direction;
+        }
+
+        return line.reverseDirection || line.stations[0];
+
+    }
+
+    /* =========================
+       DIREKTVERBINDUNGEN
+    ========================= */
+
+    lines.forEach(line=>{
+
+        const start =
+        line.stations.indexOf(von);
 
         results.innerHTML =
         "<p class='small'>Start und Ziel sind identisch</p>";
 
-        return;
+        if(
+            start !== -1 &&
+            end !== -1 &&
+            hatStationsbewegung(start,end)
+        ){
 
-    }
+            const richtung =
+            richtungFuer(line,start,end);
+
+            resultCount++;
 
     const route =
     routeMitBfsFinden(von,bis);
@@ -450,7 +482,10 @@ function routeSuchen(){
         results.innerHTML =
         "<p class='small'>Keine Verbindung gefunden</p>";
 
-        return;
+            <p>
+            Richtung:
+            <b>${richtung}</b>
+            </p>
 
     }
 
@@ -509,7 +544,99 @@ function routeSuchen(){
 
     </div>
 
-    `;
+                const transferIndex2 =
+                line2.stations.indexOf(
+                    transferStation
+                );
+
+                if(transferIndex2 === -1) return;
+
+                if(
+                    hatStationsbewegung(start1,index1) &&
+                    hatStationsbewegung(transferIndex2,end2)
+                ){
+
+                    const richtung1 =
+                    richtungFuer(line1,start1,index1);
+
+                    const richtung2 =
+                    richtungFuer(line2,transferIndex2,end2);
+
+                    resultCount++;
+
+                    results.innerHTML += `
+
+                    <div class="resultBox">
+
+                    <h2 class="live">
+                    🔄 Umstieg möglich
+                    </h2>
+
+                    <p>
+                    🚆 ${line1.name}
+                    von
+                    <b>${von}</b>
+                    bis
+                    <b>${transferStation}</b>
+                    </p>
+
+                    <p>
+                    Richtung:
+                    <b>${richtung1}</b>
+                    </p>
+
+                    <p>
+                    🚆 ${line2.name}
+                    von
+                    <b>${transferStation}</b>
+                    bis
+                    <b>${bis}</b>
+                    </p>
+
+                    <p>
+                    Richtung:
+                    <b>${richtung2}</b>
+                    </p>
+
+                    <p>
+                    🚉 Umstieg:
+                    <b>${transferStation}</b>
+                    </p>
+
+                    <p>
+                    ⏱ Abfahrt:
+                    <b>${zeit}</b>
+                    </p>
+
+                    <button onclick="
+                    streckeSpeichern(
+                        'Umstieg',
+                        '${von}',
+                        '${bis}',
+                        '${zeit}'
+                    )
+                    ">
+                    📌 Reise speichern
+                    </button>
+
+                    </div>
+
+                    `;
+
+                }
+
+            });
+
+        });
+
+    });
+
+    if(resultCount === 0){
+
+        results.innerHTML =
+        "<p class='small'>Keine Verbindung gefunden</p>";
+
+    }
 
 }
 /* =====================================
