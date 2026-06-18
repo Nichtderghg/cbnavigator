@@ -303,7 +303,7 @@ function routeSuchen(){
 
     results.innerHTML = "";
 
-    let found = false;
+    let resultCount = 0;
 
     /* =========================
        DIREKTVERBINDUNGEN
@@ -323,7 +323,7 @@ function routeSuchen(){
             start < end
         ){
 
-            found = true;
+            resultCount++;
 
             results.innerHTML += `
 
@@ -369,8 +369,6 @@ function routeSuchen(){
     /* =========================
        UMSTIEGE
     ========================= */
-if(!found){
-
     lines.forEach(line1=>{
 
         lines.forEach(line2=>{
@@ -401,7 +399,7 @@ if(!found){
                     transferIndex2 < end2
                 ){
 
-                    found = true;
+                    resultCount++;
 
                     results.innerHTML += `
 
@@ -460,9 +458,7 @@ if(!found){
 
     });
 
-}
-
-    if(!found){
+    if(resultCount === 0){
 
         results.innerHTML =
         "<p class='small'>Keine Verbindung gefunden</p>";
