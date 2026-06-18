@@ -147,6 +147,7 @@ const lines = [
 {
     name:"RE11",
     direction:"Berlin Hbf",
+    reverseDirection:"Schöningen Hbf",
 
     stations:[
         "Schöningen Hbf",
@@ -170,6 +171,7 @@ const lines = [
 {
     name:"CE+1",
     direction:"Schöningen Hbf",
+    reverseDirection:"Bärendorf Hbf",
 
     stations:[
         "Bärendorf Hbf",
@@ -188,6 +190,7 @@ const lines = [
 {
     name:"RB49",
     direction:"Helmstedt",
+    reverseDirection:"Schöppenstedt",
 
     stations:[
         "Schöppenstedt",
@@ -203,6 +206,7 @@ const lines = [
 {
     name:"RE51",
     direction:"Hildesheim Hbf",
+    reverseDirection:"Schöningen Hbf",
 
     stations:[
         "Schöningen Hbf",
@@ -222,6 +226,7 @@ const lines = [
 {
     name:"RB45",
     direction:"Schöppenstedt",
+    reverseDirection:"Braunschweig Hbf",
 
     stations:[
         "Braunschweig Hbf",
@@ -305,9 +310,9 @@ function routeSuchen(){
 
     let resultCount = 0;
 
-    function istInFahrtrichtung(startIndex, endIndex){
+    function hatStationsbewegung(startIndex, endIndex){
 
-        return startIndex !== endIndex;
+        return startIndex < endIndex || startIndex > endIndex;
 
     }
 
@@ -336,7 +341,7 @@ function routeSuchen(){
         if(
             start !== -1 &&
             end !== -1 &&
-            istInFahrtrichtung(start,end)
+            hatStationsbewegung(start,end)
         ){
 
             const richtung =
@@ -414,8 +419,8 @@ function routeSuchen(){
                 if(transferIndex2 === -1) return;
 
                 if(
-                    istInFahrtrichtung(start1,index1) &&
-                    istInFahrtrichtung(transferIndex2,end2)
+                    hatStationsbewegung(start1,index1) &&
+                    hatStationsbewegung(transferIndex2,end2)
                 ){
 
                     const richtung1 =
