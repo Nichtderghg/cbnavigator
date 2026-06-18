@@ -254,6 +254,136 @@ lines.forEach(line=>{
 allStations.sort();
 
 /* =====================================
+   🕸️ STATIONSGRAPH
+===================================== */
+
+function stationsGraphBauen(){
+
+    const graph = {};
+
+    lines.forEach(line=>{
+
+        line.stations.forEach((station,index)=>{
+
+            if(!graph[station]){
+                graph[station] = [];
+            }
+
+            const nextStation =
+            line.stations[index + 1];
+
+            if(!nextStation) return;
+
+            const edge = {
+                from: station,
+                to: nextStation,
+                lineName: line.name
+            };
+
+            const reverseEdge = {
+                from: nextStation,
+                to: station,
+                lineName: line.name
+            };
+
+            graph[station].push(edge);
+
+            if(!graph[nextStation]){
+                graph[nextStation] = [];
+            }
+
+            graph[nextStation].push(reverseEdge);
+
+        });
+
+    });
+
+    return graph;
+
+}
+
+const stationsGraph =
+stationsGraphBauen();
+
+function routeMitBfsFinden(von,bis){
+
+    const queue = [
+        {
+            station: von,
+            path: []
+        }
+    ];
+
+    const visited =
+    new Set([von]);
+
+    while(queue.length > 0){
+
+        const current =
+        queue.shift();
+
+        if(current.station === bis){
+            return current.path;
+        }
+
+        const edges =
+        stationsGraph[current.station] || [];
+
+        edges.forEach(edge=>{
+
+            if(visited.has(edge.to)) return;
+
+            visited.add(edge.to);
+
+            queue.push({
+                station: edge.to,
+                path: [
+                    ...current.path,
+                    edge
+                ]
+            });
+
+        });
+
+    }
+
+    return null;
+
+}
+
+function routeInAbschnitteGruppieren(route){
+
+    const sections = [];
+
+    route.forEach(edge=>{
+
+        const lastSection =
+        sections[sections.length - 1];
+
+        if(
+            lastSection &&
+            lastSection.lineName === edge.lineName
+        ){
+
+            lastSection.to = edge.to;
+
+        }else{
+
+            sections.push({
+                lineName: edge.lineName,
+                from: edge.from,
+                to: edge.to
+            });
+
+        }
+
+    });
+
+    return sections;
+
+}
+
+/* =====================================
    🔽 DROPDOWNS
 ===================================== */
 
@@ -302,6 +432,45 @@ dropdownFuellen(
 );
 
 /* =====================================
+   ⏱ ZEITMODELL
+===================================== */
+
+const FAHRZEIT_PRO_ABSCHNITT = 5;
+const MINDEST_UMSTIEGSZEIT = 5;
+
+function zeitInMinuten(zeit){
+
+    const [stunden,minuten] =
+    zeit.split(":").map(Number);
+
+    return stunden * 60 + minuten;
+
+}
+
+function minutenAlsZeit(minutenGesamt){
+
+    const minutenProTag = 24 * 60;
+
+    const minutenNormalisiert =
+    ((minutenGesamt % minutenProTag) + minutenProTag) % minutenProTag;
+
+    const stunden =
+    Math.floor(minutenNormalisiert / 60);
+
+    const minuten =
+    minutenNormalisiert % 60;
+
+    return `${String(stunden).padStart(2,"0")}:${String(minuten).padStart(2,"0")}`;
+
+}
+
+function fahrzeitBerechnen(startIndex,endIndex){
+
+    return (endIndex - startIndex) * FAHRZEIT_PRO_ABSCHNITT;
+
+}
+
+/* =====================================
    🔍 ROUTE SUCHEN
 ===================================== */
 
@@ -331,6 +500,26 @@ function routeSuchen(){
     }
 
     let found = false;
+    const startMinuten =
+    zeitInMinuten(zeit);
+
+    let resultCount = 0;
+
+    function hatStationsbewegung(startIndex, endIndex){
+
+        return startIndex < endIndex || startIndex > endIndex;
+
+    }
+
+    function richtungFuer(line, startIndex, endIndex){
+
+        if(startIndex < endIndex){
+            return line.direction;
+        }
+
+        return line.reverseDirection || line.stations[0];
+
+    }
 
     /* =========================
        DIREKTVERBINDUNGEN
@@ -341,37 +530,45 @@ function routeSuchen(){
         const start =
         line.stations.indexOf(von);
 
-        const end =
-        line.stations.indexOf(bis);
+        results.innerHTML =
+        "<p class='small'>Start und Ziel sind identisch</p>";
 
         if(
             start !== -1 &&
             end !== -1 &&
-            start < end
+            hatStationsbewegung(start,end)
         ){
 
-            found = true;
+            const zielAnkunft =
+            minutenAlsZeit(
+                startMinuten + fahrzeitBerechnen(start,end)
+            );
 
-            results.innerHTML += `
+            resultCount++;
 
-            <div class="resultBox">
+    const route =
+    routeMitBfsFinden(von,bis);
 
-            <h2 class="live">
-            🚆 ${line.name}
-            </h2>
+    if(!route){
+
+        results.innerHTML =
+        "<p class='small'>Keine Verbindung gefunden</p>";
 
             <p>
             Richtung:
-            <b>${line.direction}</b>
+            <b>${richtung}</b>
             </p>
 
-            <p>
-            ${von} ➜ ${bis}
-            </p>
+    }
 
             <p>
-            Abfahrt ab:
+            ⏱ Abfahrt:
             <b>${zeit}</b>
+            </p>
+
+            <p>
+            🏁 Ankunft Ziel:
+            <b>${zielAnkunft}</b>
             </p>
 
             <button onclick="
@@ -385,36 +582,52 @@ function routeSuchen(){
             📌 Reise speichern
             </button>
 
-            </div>
+    const sectionHtml =
+    sections.map((section,index)=>`
 
-            `;
+        <p>
+        🚆 ${section.lineName}
+        von
+        <b>${section.from}</b>
+        bis
+        <b>${section.to}</b>
+        </p>
 
+        ${
+            index < sections.length - 1
+                ? `<p>🚉 Umstieg: <b>${section.to}</b></p>`
+                : ""
         }
 
-    });
+    `).join("");
 
-    /* =========================
-       UMSTIEGE
-    ========================= */
-if(!found){
+    results.innerHTML += `
 
-    lines.forEach(line1=>{
+    <div class="resultBox">
 
-        lines.forEach(line2=>{
+    <h2 class="live">
+    ${sections.length === 1 ? "🚆 Direktverbindung" : "🔄 Umstieg möglich"}
+    </h2>
 
-            if(line1 === line2) return;
+    ${sectionHtml}
 
-            const start1 =
-            line1.stations.indexOf(von);
+    <p>
+    ⏱ Abfahrt:
+    <b>${zeit}</b>
+    </p>
 
-            if(start1 === -1) return;
+    <button onclick="
+    streckeSpeichern(
+        '${routeName}',
+        '${von}',
+        '${bis}',
+        '${zeit}'
+    )
+    ">
+    📌 Reise speichern
+    </button>
 
-            const end2 =
-            line2.stations.indexOf(bis);
-
-            if(end2 === -1) return;
-
-            line1.stations.forEach((transferStation,index1)=>{
+    </div>
 
                 const transferIndex2 =
                 line2.stations.indexOf(
@@ -424,11 +637,31 @@ if(!found){
                 if(transferIndex2 === -1) return;
 
                 if(
-                    start1 < index1 &&
-                    transferIndex2 < end2
+                    hatStationsbewegung(start1,index1) &&
+                    hatStationsbewegung(transferIndex2,end2)
                 ){
 
-                    found = true;
+                    const ankunftUmstieg =
+                    minutenAlsZeit(
+                        startMinuten + fahrzeitBerechnen(start1,index1)
+                    );
+
+                    const weiterfahrt =
+                    minutenAlsZeit(
+                        startMinuten +
+                        fahrzeitBerechnen(start1,index1) +
+                        MINDEST_UMSTIEGSZEIT
+                    );
+
+                    const ankunftZiel =
+                    minutenAlsZeit(
+                        startMinuten +
+                        fahrzeitBerechnen(start1,index1) +
+                        MINDEST_UMSTIEGSZEIT +
+                        fahrzeitBerechnen(transferIndex2,end2)
+                    );
+
+                    resultCount++;
 
                     results.innerHTML += `
 
@@ -447,11 +680,21 @@ if(!found){
                     </p>
 
                     <p>
+                    Richtung:
+                    <b>${richtung1}</b>
+                    </p>
+
+                    <p>
                     🚆 ${line2.name}
                     von
                     <b>${transferStation}</b>
                     bis
                     <b>${bis}</b>
+                    </p>
+
+                    <p>
+                    Richtung:
+                    <b>${richtung2}</b>
                     </p>
 
                     <p>
@@ -462,6 +705,21 @@ if(!found){
                     <p>
                     ⏱ Abfahrt:
                     <b>${zeit}</b>
+                    </p>
+
+                    <p>
+                    🕓 Ankunft Umstieg:
+                    <b>${ankunftUmstieg}</b>
+                    </p>
+
+                    <p>
+                    🚉 Weiterfahrt:
+                    <b>${weiterfahrt}</b>
+                    </p>
+
+                    <p>
+                    🏁 Ankunft Ziel:
+                    <b>${ankunftZiel}</b>
                     </p>
 
                     <button onclick="
@@ -486,6 +744,13 @@ if(!found){
         });
 
     });
+
+    if(resultCount === 0){
+
+        results.innerHTML =
+        "<p class='small'>Keine Verbindung gefunden</p>";
+
+    }
 
 }
 
