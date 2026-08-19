@@ -525,27 +525,6 @@ function routeSuchen(){
        DIREKTVERBINDUNGEN
     ========================= */
 
-    lines.forEach(line=>{
-
-        const start =
-        line.stations.indexOf(von);
-
-        results.innerHTML =
-        "<p class='small'>Start und Ziel sind identisch</p>";
-
-        if(
-            start !== -1 &&
-            end !== -1 &&
-            hatStationsbewegung(start,end)
-        ){
-
-            const zielAnkunft =
-            minutenAlsZeit(
-                startMinuten + fahrzeitBerechnen(start,end)
-            );
-
-            resultCount++;
-
     const route =
     routeMitBfsFinden(von,bis);
 
@@ -554,33 +533,12 @@ function routeSuchen(){
         results.innerHTML =
         "<p class='small'>Keine Verbindung gefunden</p>";
 
-            <p>
-            Richtung:
-            <b>${richtung}</b>
-            </p>
+        return;
 
     }
 
-            <p>
-            ⏱ Abfahrt:
-            <b>${zeit}</b>
-            </p>
-
-            <p>
-            🏁 Ankunft Ziel:
-            <b>${zielAnkunft}</b>
-            </p>
-
-            <button onclick="
-            streckeSpeichern(
-                '${line.name}',
-                '${von}',
-                '${bis}',
-                '${zeit}'
-            )
-            ">
-            📌 Reise speichern
-            </button>
+    const sections =
+    routeInAbschnitteGruppieren(route);
 
     const sectionHtml =
     sections.map((section,index)=>`
@@ -601,6 +559,11 @@ function routeSuchen(){
 
     `).join("");
 
+    const zielAnkunft =
+    minutenAlsZeit(
+        startMinuten + (route.length * FAHRZEIT_PRO_ABSCHNITT)
+    );
+
     results.innerHTML += `
 
     <div class="resultBox">
@@ -616,9 +579,14 @@ function routeSuchen(){
     <b>${zeit}</b>
     </p>
 
+    <p>
+    🏁 Ankunft Ziel:
+    <b>${zielAnkunft}</b>
+    </p>
+
     <button onclick="
     streckeSpeichern(
-        '${routeName}',
+        '${sections.length === 1 ? sections[0].lineName : "Umstieg"}',
         '${von}',
         '${bis}',
         '${zeit}'
@@ -629,128 +597,7 @@ function routeSuchen(){
 
     </div>
 
-                const transferIndex2 =
-                line2.stations.indexOf(
-                    transferStation
-                );
-
-                if(transferIndex2 === -1) return;
-
-                if(
-                    hatStationsbewegung(start1,index1) &&
-                    hatStationsbewegung(transferIndex2,end2)
-                ){
-
-                    const ankunftUmstieg =
-                    minutenAlsZeit(
-                        startMinuten + fahrzeitBerechnen(start1,index1)
-                    );
-
-                    const weiterfahrt =
-                    minutenAlsZeit(
-                        startMinuten +
-                        fahrzeitBerechnen(start1,index1) +
-                        MINDEST_UMSTIEGSZEIT
-                    );
-
-                    const ankunftZiel =
-                    minutenAlsZeit(
-                        startMinuten +
-                        fahrzeitBerechnen(start1,index1) +
-                        MINDEST_UMSTIEGSZEIT +
-                        fahrzeitBerechnen(transferIndex2,end2)
-                    );
-
-                    resultCount++;
-
-                    results.innerHTML += `
-
-                    <div class="resultBox">
-
-                    <h2 class="live">
-                    🔄 Umstieg möglich
-                    </h2>
-
-                    <p>
-                    🚆 ${line1.name}
-                    von
-                    <b>${von}</b>
-                    bis
-                    <b>${transferStation}</b>
-                    </p>
-
-                    <p>
-                    Richtung:
-                    <b>${richtung1}</b>
-                    </p>
-
-                    <p>
-                    🚆 ${line2.name}
-                    von
-                    <b>${transferStation}</b>
-                    bis
-                    <b>${bis}</b>
-                    </p>
-
-                    <p>
-                    Richtung:
-                    <b>${richtung2}</b>
-                    </p>
-
-                    <p>
-                    🚉 Umstieg:
-                    <b>${transferStation}</b>
-                    </p>
-
-                    <p>
-                    ⏱ Abfahrt:
-                    <b>${zeit}</b>
-                    </p>
-
-                    <p>
-                    🕓 Ankunft Umstieg:
-                    <b>${ankunftUmstieg}</b>
-                    </p>
-
-                    <p>
-                    🚉 Weiterfahrt:
-                    <b>${weiterfahrt}</b>
-                    </p>
-
-                    <p>
-                    🏁 Ankunft Ziel:
-                    <b>${ankunftZiel}</b>
-                    </p>
-
-                    <button onclick="
-                    streckeSpeichern(
-                        'Umstieg',
-                        '${von}',
-                        '${bis}',
-                        '${zeit}'
-                    )
-                    ">
-                    📌 Reise speichern
-                    </button>
-
-                    </div>
-
-                    `;
-
-                }
-
-            });
-
-        });
-
-    });
-
-    if(resultCount === 0){
-
-        results.innerHTML =
-        "<p class='small'>Keine Verbindung gefunden</p>";
-
-    }
+    `;
 
 }
 
