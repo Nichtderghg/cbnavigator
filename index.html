@@ -22,6 +22,19 @@ header{
     font-weight:bold;
 }
 
+.profileWidget{
+    width:250px;
+    margin:20px auto 0;
+}
+
+.profileWidget iframe{
+    display:block;
+    width:100%;
+    height:100px;
+    border:none;
+    border-radius:8px;
+}
+
 .container{
     padding:20px;
 }
@@ -98,6 +111,15 @@ button:hover{
 <header>
 🚆 CB Navigator 3.0
 </header>
+
+<div class="profileWidget">
+    <iframe
+        id="carleis-profile-widget"
+        src="https://c9c5dc9f-7a0a-4a6b-86be-cf4d681d9754-00-3ilzyfeh60vrr.janeway.replit.dev/embed_profile.html"
+        title="Carleis-Profil"
+        loading="lazy">
+    </iframe>
+</div>
 
 <div class="container">
 
@@ -645,6 +667,58 @@ function streckeSpeichern(name, von, bis, zeit){
     authUrl.toString();
 
 }
+
+/* =====================================
+   👤 CARLEIS PROFIL-WIDGET
+===================================== */
+
+const carleisAuthUrl =
+'https://c9c5dc9f-7a0a-4a6b-86be-cf4d681d9754-00-3ilzyfeh60vrr.janeway.replit.dev';
+
+const carleisProfileWidget =
+document.getElementById('carleis-profile-widget');
+
+window.addEventListener('load',()=>{
+
+    const accessToken =
+    localStorage.getItem('accessToken');
+
+    if(accessToken){
+
+        carleisProfileWidget.contentWindow.postMessage(
+            {
+                type:'init',
+                accessToken:accessToken
+            },
+            carleisAuthUrl
+        );
+
+    }
+
+});
+
+window.addEventListener('message',(event)=>{
+
+    if(event.origin !== carleisAuthUrl) return;
+
+    if(event.data?.type === 'logout'){
+
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        location.reload();
+
+    }
+
+    if(event.data?.type === 'openProfile'){
+
+        window.open(
+            carleisAuthUrl + '/profile.html',
+            '_blank'
+        );
+
+    }
+
+});
 
 /* =====================================
    📥 AUTH RÜCKGABE
